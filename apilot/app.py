@@ -9,6 +9,7 @@ import hashlib
 from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
+import sqlite3
 
 from apilot import config
 from apilot.database import db
@@ -614,6 +615,21 @@ def view_reference_data():
     if st.button("← Back to Dashboard"):
         st.session_state['nav'] = 'dashboard'
         st.rerun()
+
+with st.expander("Admin: Reset processed invoices"):
+    confirm = st.checkbox("I understand this will delete all invoice runs")
+
+    if st.button("Clear processed invoices", type="secondary"):
+        if not confirm:
+            st.warning("Please confirm before proceeding.")
+        else:
+            db_path = Path("data/apilot.db")
+
+            with sqlite3.connect(db_path) as conn:
+                conn.execute("DELETE FROM invoice_runs")
+
+            st.success("Processed invoices cleared successfully.")
+            st.rerun()
 
 
 def main():
