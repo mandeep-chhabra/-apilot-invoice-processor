@@ -630,14 +630,18 @@ with st.expander("Admin: Reset invoice data"):
     if admin_password and not password_correct:
         st.warning("Incorrect admin password.")
 
+    delete_cache = st.checkbox(
+        "Also delete cached extraction results",
+        disabled=not password_correct
+    )
+
     confirm = st.checkbox(
-        "I understand this will delete all processed invoices "
-        "and cached extraction results",
+        "I understand this will delete the selected invoice data",
         disabled=not password_correct
     )
 
     if st.button(
-        "Clear All Invoice Data",
+        "Clear Invoice Data",
         type="secondary",
         disabled=not password_correct or not confirm
     ):
@@ -645,12 +649,15 @@ with st.expander("Admin: Reset invoice data"):
 
         try:
             with sqlite3.connect(db_path) as conn:
-                conn.execute("DELETE FROM extraction_cache")
+                if delete_cache:
+                    conn.execute("DELETE FROM extraction_cache")
+
                 conn.execute("DELETE FROM invoice_runs")
 
             st.success(
-                "Processed invoices and extraction cache "
-                "cleared successfully."
+                "Invoice runs and extraction cache cleared successfully."
+                if delete_cache
+                else "Processed invoice runs cleared successfully."
             )
             st.rerun()
 
