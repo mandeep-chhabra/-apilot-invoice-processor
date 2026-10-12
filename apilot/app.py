@@ -10,6 +10,7 @@ from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 import sqlite3
+import hmac
 
 from apilot import config
 from apilot.database import db
@@ -616,20 +617,49 @@ def view_reference_data():
         st.session_state['nav'] = 'dashboard'
         st.rerun()
 
-with st.expander("Admin: Reset processed invoices"):
-    confirm = st.checkbox("I understand this will delete all invoice runs")
+with st.expander("Admin: Reset invoice data"):
+    # Password stored in Streamlit secrets
+    admin_password = st.text_input(
+        "Admin password",
+        type="password",
+        key="reset_admin_password"
+    )
 
-    if st.button("Clear processed invoices", type="secondary"):
-        if not confirm:
-            st.warning("Please confirm before proceeding.")
-        else:
-            db_path = Path("data/apilot.db")
+    password_correct = hmac.compare_digest(
+        admin_password,
+        st.secrets["ADMIN_PASSWORD"]
+    ) if admin_password else False
 
+    if admin_password and not password_correct:
+        st.warning("Incorrect admin password.")
+
+    confirm = st.checkbox(
+        "I understand this will delete all processed invoices "
+        "and cached extraction results",
+        disabled=not password_correct
+    )
+
+    if st.button(
+        "Clear All Invoice Data",
+        type="secondary",
+        disabled=not password_correct or not confirm
+    ):
+        db_path = Path("data/apilot.db")
+
+        try:
             with sqlite3.connect(db_path) as conn:
+                conn.execute("DELETE FROM extraction_cache")
                 conn.execute("DELETE FROM invoice_runs")
 
-            st.success("Processed invoices cleared successfully.")
+            st.success(
+                "Processed invoices and extraction cache "
+                "cleared successfully."
+            )
             st.rerun()
+
+        except sqlite3.Error as e:
+            st.error(f"Could not clear invoice data: {e}")
+
 
 
 def main():
