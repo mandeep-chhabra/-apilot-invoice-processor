@@ -70,9 +70,6 @@ def show_dashboard():
     if runs:
         import pandas as pd
 
-        # Create a dropdown to select which invoice to view
-        st.subheader("Recent Processing Activity")
-
         # Create a selection dropdown
         run_options = {f"{run.timestamp.strftime('%Y-%m-%d %H:%M')} - {run.original_filename} ({run.business_decision or 'Processing'})": run for run in runs}
         selected_label = st.selectbox("Select an invoice to view details:", list(run_options.keys()))
